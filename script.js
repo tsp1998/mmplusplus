@@ -108,7 +108,7 @@ window.onload = () => {
     let currentBalance = getCurrentBalance(tradeNumber);
     let riskPercent = parseFloat(riskPercents[tradeNumber - 1]);
     if (!riskPercent) {
-      riskPercent = isLossInPrevTrade ? (prevSuggestionTradeAmountIfLoss * 100 / currentBalance).toFixed(2) : 2;
+      riskPercent = isLossInPrevTrade ? +(prevSuggestionTradeAmountIfLoss * 100 / currentBalance).toFixed(2) : 2;
     }
     riskPercents[tradeNumber - 1] = riskPercent
     let newBalance;
@@ -141,7 +141,7 @@ window.onload = () => {
       <td>${tradeNumber}</td>
       <td>${tradeAmount.toFixed(2)}</td>
       <td>${profitAmount.toFixed(2)}(<span class="balance-after-profit">${balanceAfterProfit.toFixed(2)}</span>)</td>
-      <td>${tradeAmount.toFixed(2)}(<span class="balance-after-profit">${balanceAfterLoss.toFixed(2)}</span>)</td>
+      <td>${tradeAmount.toFixed(2)}(<span class="balance-after-loss">${balanceAfterLoss.toFixed(2)}</span>)</td>
       <td>${tradesResults[tradeNumber - 1] ? newBalance.toFixed(2) : '-'}</td>
       <td>
         <div class="form-group">
