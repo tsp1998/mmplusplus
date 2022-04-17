@@ -4,11 +4,11 @@ window.onload = () => {
     loss: 'loss'
   }
   const initialAmountInput = document.querySelector('#initialAmount');
-  const rateOfReturnPercentInput = document.querySelector('#rateOfReturnPercent');
   const tradesTableBodyElement = document.querySelector('#trades-table-body');
   let totalTrades = 0;
   let tradesResults = [];
   let riskPercents = [2];
+  rateOfReturnPercents = [80];
 
   function getCurrentBalance(tradeNumber) {
     return tradeNumber === 1 ?
@@ -59,6 +59,30 @@ window.onload = () => {
     updateRestTable(tradeNumber)
   }
 
+  function rateOfReturnPercentInputChangeHandler(inputId = 'rateOfReturnPercent-1', inputValue) {
+    const rateOfReturnPercent = parseFloat(inputValue) || 0;
+    const tradeNumber = parseInt(inputId.split('-')[1]);
+    rateOfReturnPercents[tradeNumber - 1] = rateOfReturnPercent;
+    const tableRow = prepareTableRow(tradeNumber);
+    tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow)
+    const rateOfReturnPercentInput = tableRow.querySelector('.risk-percent-input')
+    rateOfReturnPercentInput.focus();
+    const val = rateOfReturnPercentInput.value
+    rateOfReturnPercentInput.value = ''
+    rateOfReturnPercentInput.value = val
+    updateRestTable(tradeNumber)
+  }
+
+  function addListenersToInputAndItsButtons(inputElement, listenerFunction) {
+    inputElement.addEventListener('change', () => listenerFunction(inputElement.id, inputElement.value))
+    inputElement.addEventListener('keyup', () => listenerFunction(inputElement.id, inputElement.value))
+    const decrementButtons = inputElement.parentElement.querySelectorAll('.decrement');
+    const incrementButtons = inputElement.parentElement.querySelectorAll('.increment');
+    [...decrementButtons, ...incrementButtons].forEach(
+      button => button.addEventListener('click', () => inputValueUpdateHandler(button.value, button))
+    )
+  }
+
   function prepareTableRow(tradeNumber = 1) {
     const prevTradeRow = tradesTableBodyElement.children[tradeNumber - 2];
     const isLossInPrevTrade = prevTradeRow && prevTradeRow.className.indexOf('trade-row-loss') > -1;
@@ -72,8 +96,18 @@ window.onload = () => {
     }
     riskPercents[tradeNumber - 1] = riskPercent
     let newBalance;
-    const tradeAmount = isLossInPrevTrade ? prevSuggestionTradeAmountIfLoss : currentBalance * riskPercent / 100;
-    const rateOfReturnPercent = parseFloat(rateOfReturnPercentInput.value)
+    const tradeAmount = currentBalance * riskPercent / 100;
+    let rateOfReturnPercent = rateOfReturnPercents[tradeNumber - 1];
+    if (!rateOfReturnPercent) {
+      if (isLossInPrevTrade) {
+        const prevBalanceAfterProfit = parseFloat(prevTradeRow.querySelector('.balance-after-profit').textContent);
+        const lossToRecover = prevBalanceAfterProfit - currentBalance;
+        rateOfReturnPercent = (lossToRecover * 100 / tradeAmount).toFixed(2);
+      } else {
+        rateOfReturnPercent = rateOfReturnPercents[tradeNumber - 2] || 80;
+      }
+    }
+    rateOfReturnPercents[tradeNumber - 1] = rateOfReturnPercent
     const profitAmount = (tradeAmount * rateOfReturnPercent / 100) || 0
     const balanceAfterLoss = currentBalance - tradeAmount
     const balanceAfterProfit = currentBalance + profitAmount;
@@ -90,8 +124,8 @@ window.onload = () => {
     tableRow.innerHTML = `
       <td>${tradeNumber}</td>
       <td>${tradeAmount.toFixed(2)}</td>
-      <td>${profitAmount.toFixed(2)}(${balanceAfterProfit.toFixed(2)})</td>
-      <td>${tradeAmount.toFixed(2)}(${balanceAfterLoss.toFixed(2)})</td>
+      <td>${profitAmount.toFixed(2)}(<span class="balance-after-profit">${balanceAfterProfit.toFixed(2)}</span>)</td>
+      <td>${tradeAmount.toFixed(2)}(<span class="balance-after-profit">${balanceAfterLoss.toFixed(2)}</span>)</td>
       <td>${tradesResults[tradeNumber - 1] ? newBalance.toFixed(2) : '-'}</td>
       <td>
         <div class="form-group">
@@ -108,16 +142,25 @@ window.onload = () => {
       </td>
       <td><button class='profit-button' id="profit-${tradeNumber}">Profit</button></td>
       <td><button class='loss-button' id="loss-${tradeNumber}">Loss</button></td>
-      <td>${suggestionTradeAmountIfLoss || '-'}</td>
+      <td>${suggestionTradeAmountIfLoss ? `${suggestionTradeAmountIfLoss}` : '-'}</td>
+      <td>
+        <div class="form-group">
+          <div class="form-control">
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-1"><<<</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.1"><<</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.01"><</button>
+            <input type="number" id="rateOfReturnPercent-${tradeNumber}" class="rate-of-return-percent-input" value="${rateOfReturnPercent}" />
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.01">></button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.1">>></button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="1">>>></button>
+          </div>
+        </div>
+      </td>
     `
     const riskPercentInput = tableRow.querySelector(`#riskPercent-${tradeNumber}`);
-    riskPercentInput.addEventListener('change', () => riskPercentInputChangeHandler(riskPercentInput.id, riskPercentInput.value))
-    riskPercentInput.addEventListener('keyup', () => riskPercentInputChangeHandler(riskPercentInput.id, riskPercentInput.value))
-    const decrementButtons = riskPercentInput.parentElement.querySelectorAll('.decrement');
-    const incrementButtons = riskPercentInput.parentElement.querySelectorAll('.increment');
-    [...decrementButtons, ...incrementButtons].forEach(
-      button => button.addEventListener('click', () => inputValueUpdateHandler(button.value, button))
-    )
+    const rateOfReturnPercentInput = tableRow.querySelector(`#rateOfReturnPercent-${tradeNumber}`);
+    addListenersToInputAndItsButtons(riskPercentInput, riskPercentInputChangeHandler)
+    addListenersToInputAndItsButtons(rateOfReturnPercentInput, rateOfReturnPercentInputChangeHandler)
     const profitButton = tableRow.querySelector(`#profit-${tradeNumber}`)
     profitButton.addEventListener('click', () => onButtonClick(ResultStatuses.profit, profitButton.id))
     const lossButton = tableRow.querySelector(`#loss-${tradeNumber}`)
@@ -139,13 +182,17 @@ window.onload = () => {
 
   function initTable() {
     tradesTableBodyElement.innerHTML = ''
-    const tradesResultsJSON = localStorage.getItem('tradesResults', JSON.stringify(tradesResults))
-    const riskPercentsJSON = localStorage.getItem('riskPercents', JSON.stringify(riskPercents))
+    const tradesResultsJSON = localStorage.getItem('tradesResults')
+    const riskPercentsJSON = localStorage.getItem('riskPercents')
+    const rateOfReturnPercentsJSON = localStorage.getItem('rateOfReturnPercents')
     if (riskPercentsJSON) {
       riskPercents = JSON.parse(riskPercentsJSON)
     }
     if (tradesResultsJSON) {
       tradesResults = JSON.parse(tradesResultsJSON)
+    }
+    if (rateOfReturnPercentsJSON) {
+      rateOfReturnPercents = JSON.parse(rateOfReturnPercentsJSON)
     }
     riskPercents.forEach((_, i) => {
       addTradeRow(i + 1);
@@ -159,21 +206,21 @@ window.onload = () => {
   function reset() {
     tradesResults = [];
     riskPercents = [2];
-    localStorage.removeItem('tradesResults', JSON.stringify(tradesResults))
-    localStorage.removeItem('riskPercents', JSON.stringify(riskPercents))
+    localStorage.removeItem('tradesResults')
+    localStorage.removeItem('riskPercents')
+    localStorage.removeItem('rateOfReturnPercents')
     initTable()
   }
 
   function saveHistory(params) {
     localStorage.setItem('tradesResults', JSON.stringify(tradesResults))
     localStorage.setItem('riskPercents', JSON.stringify(riskPercents))
+    localStorage.setItem('rateOfReturnPercents', JSON.stringify(rateOfReturnPercents))
   }
 
   initTable()
 
   initialAmountInput.addEventListener('keyup', onInputUpdate)
-  rateOfReturnPercentInput.addEventListener('keyup', onInputUpdate)
-  rateOfReturnPercentInput.addEventListener('change', onInputUpdate)
 
   function inputValueUpdateHandler(updateValueby = 0.01, buttonElement) {
     const inputElement = buttonElement.parentElement.querySelector('input');
@@ -181,17 +228,15 @@ window.onload = () => {
     inputElement.value = newValue;
     const classSplit = buttonElement.className.split('-')
     const tradeNumber = parseInt(classSplit[classSplit.length - 1])
-    riskPercents[tradeNumber - 1] = newValue
+    if (inputElement.className.indexOf('risk-percent') > -1) {
+      riskPercents[tradeNumber - 1] = newValue
+    } else {
+      rateOfReturnPercents[tradeNumber - 1] = newValue
+    }
     const tableRow = prepareTableRow(tradeNumber);
     tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow);
     updateRestTable(tradeNumber);
   }
-
-  const decrementButtons = rateOfReturnPercentInput.parentElement.querySelectorAll('.decrement');
-  const incrementButtons = rateOfReturnPercentInput.parentElement.querySelectorAll('.increment');
-  [...decrementButtons, ...incrementButtons].forEach(
-    button => button.addEventListener('click', () => inputValueUpdateHandler(button.value, button))
-  )
 
   const saveHistoryButton = document.getElementById('saveHistoryButton')
   const resetButton = document.getElementById('resetButton')
@@ -201,15 +246,20 @@ window.onload = () => {
 
   window.onbeforeunload = () => {
     initialAmountInput.removeEventListener('keyup', onInputUpdate)
-    rateOfReturnPercentInput.removeEventListener('keyup', onInputUpdate)
-    rateOfReturnPercentInput.removeEventListener('change', onInputUpdate)
     const riskPercentInputs = document.querySelectorAll('.risk-percent-input');
+    const rateOfReturnPercentInputs = document.querySelectorAll('.rate-of-return-percent-input');
     const profitButtons = document.querySelectorAll('.profit-button');
     const lossButtons = document.querySelectorAll('.loss-button');
     riskPercentInputs.forEach(
-      riskPercentInput => {
-        riskPercentInput.removeEventListener('keyup', () => riskPercentInputChangeHandler(riskPercentInput.id, riskPercentInput.value))
-        riskPercentInput.removeEventListener('change', () => riskPercentInputChangeHandler(riskPercentInput.id, riskPercentInput.value))
+      input => {
+        input.removeEventListener('keyup', () => riskPercentInputChangeHandler(input.id, input.value))
+        input.removeEventListener('change', () => riskPercentInputChangeHandler(input.id, input.value))
+      }
+    )
+    rateOfReturnPercentInputs.forEach(
+      input => {
+        input.removeEventListener('keyup', () => riskPercentInputChangeHandler(input.id, input.value))
+        input.removeEventListener('change', () => riskPercentInputChangeHandler(input.id, input.value))
       }
     )
     profitButtons.forEach(

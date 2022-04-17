@@ -18,18 +18,6 @@
         <input type="text" id="initialAmount" value="5000" />
       </div>
     </div>
-    <div class="form-group">
-      <div class="form-control">
-        <label for="rateOfReturnPercent">Rate of Return (%)</label>
-        <button class="decrement" value="-1"><<<</button>
-        <button class="decrement" value="-0.1"><<</button>
-        <button class="decrement" value="-0.01"><</button>
-        <input type="number" id="rateOfReturnPercent" value="80" />
-        <button class="increment" value="0.01">></button>
-        <button class="increment" value="0.1">>></button>
-        <button class="increment" value="1">>>></button>
-      </div>
-    </div>
   </div>
   <div class="trades-container">
     <h1>
@@ -49,6 +37,7 @@
           <td>Profit</td>
           <td>Loss</td>
           <td>Suggestion</td>
+          <td>Rate of Return</td>
         </tr>
       </thead>
       <tbody id="trades-table-body">
