@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Management++</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+  <h1>Money Management++</h1>
+  <div class="inputs-container">
+    <div class="form-group">
+      <div class="form-control">
+        <label for="initialAmount">Initial Amount</label>
+        <input type="text" id="initialAmount" value="5000" />
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-control">
+        <label for="rateOfReturnPercent">Rate of Return (%)</label>
+        <button class="decrement" value="-1"><<<</button>
+        <button class="decrement" value="-0.1"><<</button>
+        <button class="decrement" value="-0.01"><</button>
+        <input type="number" id="rateOfReturnPercent" value="80" />
+        <button class="increment" value="0.01">></button>
+        <button class="increment" value="0.1">>></button>
+        <button class="increment" value="1">>>></button>
+      </div>
+    </div>
+  </div>
+  <div class="trades-container">
+    <h1>
+      Trades
+      <button id="saveHistoryButton">Save History</button>
+      <button id="resetButton">Reset</button>
+    </h1>
+    <table class="trades-table" id="trades-table">
+      <thead>
+        <tr>
+          <td>Trade No.</td>
+          <td>Trade Amount</td>
+          <td>Profit Amount</td>
+          <td>Loss Amount</td>
+          <td>Current Balance</td>
+          <td>Trade Risk (%)</td>
+          <td>Profit</td>
+          <td>Loss</td>
+        </tr>
+      </thead>
+      <tbody id="trades-table-body">
+        <!-- js will add content here -->
+      </tbody>
+    </table>
+  </div>
+  <script src="./script.js"></script>
+</body>
+
+</html>
