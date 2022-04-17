@@ -3,8 +3,14 @@ window.onload = () => {
     profit: 'profit',
     loss: 'loss'
   }
+  let maxLoss = 0;
+  const losses = [];
   const initialAmountInput = document.querySelector('#initialAmount');
   const tradesTableBodyElement = document.querySelector('#trades-table-body');
+  const maxLossElement = document.getElementById('maxLoss');
+  const maxLossElement2 = document.getElementById('maxLoss2');
+  maxLossElement.textContent = maxLoss;
+  maxLossElement2.textContent = maxLoss;
   let totalTrades = 0;
   let tradesResults = [];
   let riskPercents = [2];
@@ -86,6 +92,16 @@ window.onload = () => {
   function prepareTableRow(tradeNumber = 1) {
     const prevTradeRow = tradesTableBodyElement.children[tradeNumber - 2];
     const isLossInPrevTrade = prevTradeRow && prevTradeRow.className.indexOf('trade-row-loss') > -1;
+    if (isLossInPrevTrade) {
+      const prevTradeAmount = parseFloat(prevTradeRow.children[1].textContent)
+      losses.push(prevTradeAmount)
+      const totalLoss = losses.reduce((acc, loss) => acc + loss, 0)
+      if (totalLoss > maxLoss) {
+        maxLoss = totalLoss;
+        maxLossElement.textContent = maxLoss.toFixed(2);
+        maxLossElement2.textContent = maxLoss.toFixed(2);
+      }
+    }
     const prevSuggestionTradeAmountIfLoss = prevTradeRow && parseFloat(prevTradeRow.children[8].textContent);
     const tableRow = document.createElement('tr');
     tableRow.classList.add('trade-row');
