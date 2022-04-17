@@ -60,14 +60,24 @@ window.onload = () => {
   }
 
   function prepareTableRow(tradeNumber = 1) {
-    let riskPercent = parseFloat(riskPercents[tradeNumber - 1]) || parseFloat(riskPercents[tradeNumber - 2]) || 0;
-    riskPercents[tradeNumber - 1] = riskPercent
+    const prevTradeRow = tradesTableBodyElement.children[tradeNumber - 2];
+    const isLossInPrevTrade = prevTradeRow && prevTradeRow.className.indexOf('trade-row-loss') > -1;
+    const prevSuggestionTradeAmountIfLoss = prevTradeRow && parseFloat(prevTradeRow.children[8].textContent);
     const tableRow = document.createElement('tr');
     tableRow.classList.add('trade-row');
     let currentBalance = getCurrentBalance(tradeNumber);
+    let riskPercent = parseFloat(riskPercents[tradeNumber - 1]);
+    if (!riskPercent) {
+      riskPercent = isLossInPrevTrade ? (prevSuggestionTradeAmountIfLoss * 100 / currentBalance).toFixed(2) : 2;
+    }
+    riskPercents[tradeNumber - 1] = riskPercent
     let newBalance;
-    const tradeAmount = currentBalance * riskPercent / 100;
-    const profitAmount = (tradeAmount * parseFloat(rateOfReturnPercentInput.value) / 100) || 0
+    const tradeAmount = isLossInPrevTrade ? prevSuggestionTradeAmountIfLoss : currentBalance * riskPercent / 100;
+    const rateOfReturnPercent = parseFloat(rateOfReturnPercentInput.value)
+    const profitAmount = (tradeAmount * rateOfReturnPercent / 100) || 0
+    const balanceAfterLoss = currentBalance - tradeAmount
+    const balanceAfterProfit = currentBalance + profitAmount;
+    let suggestionTradeAmountIfLoss = ((balanceAfterProfit - balanceAfterLoss) * 100 / rateOfReturnPercent).toFixed(2);
     if (tradesResults[tradeNumber - 1]) {
       if (tradesResults[tradeNumber - 1] === ResultStatuses.profit) {
         newBalance = currentBalance + profitAmount
@@ -80,8 +90,8 @@ window.onload = () => {
     tableRow.innerHTML = `
       <td>${tradeNumber}</td>
       <td>${tradeAmount.toFixed(2)}</td>
-      <td>${profitAmount.toFixed(2)}(${(currentBalance + profitAmount).toFixed(2)})</td>
-      <td>${tradeAmount.toFixed(2)}(${(currentBalance - tradeAmount).toFixed(2)})</td>
+      <td>${profitAmount.toFixed(2)}(${balanceAfterProfit.toFixed(2)})</td>
+      <td>${tradeAmount.toFixed(2)}(${balanceAfterLoss.toFixed(2)})</td>
       <td>${tradesResults[tradeNumber - 1] ? newBalance.toFixed(2) : '-'}</td>
       <td>
         <div class="form-group">
@@ -98,6 +108,7 @@ window.onload = () => {
       </td>
       <td><button class='profit-button' id="profit-${tradeNumber}">Profit</button></td>
       <td><button class='loss-button' id="loss-${tradeNumber}">Loss</button></td>
+      <td>${suggestionTradeAmountIfLoss || '-'}</td>
     `
     const riskPercentInput = tableRow.querySelector(`#riskPercent-${tradeNumber}`);
     riskPercentInput.addEventListener('change', () => riskPercentInputChangeHandler(riskPercentInput.id, riskPercentInput.value))
