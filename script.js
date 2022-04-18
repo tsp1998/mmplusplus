@@ -4,14 +4,11 @@ window.onload = () => {
     loss: 'loss'
   }
   let maxLoss = 0;
-  const losses = [];
+  const lossesMap = {};
   const initialAmountInput = document.querySelector('#initialAmount');
   const tradesTableBodyElement = document.querySelector('#trades-table-body');
   const maxLossElement = document.getElementById('maxLoss');
   const maxLossElement2 = document.getElementById('maxLoss2');
-  maxLossElement.textContent = maxLoss;
-  maxLossElement2.textContent = maxLoss;
-  let totalTrades = 0;
   let tradesResults = [];
   let riskPercents = [2];
   rateOfReturnPercents = [80];
@@ -24,7 +21,7 @@ window.onload = () => {
 
   function updateRestTable(tradeNumber = 1) {
     tradeNumber++
-    while (tradeNumber <= totalTrades) {
+    while (tradeNumber <= tradesTableBodyElement.children.length) {
       const tableRow = prepareTableRow(tradeNumber)
       tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow)
       tradeNumber++
@@ -62,7 +59,9 @@ window.onload = () => {
     const val = riskPercentInput.value
     riskPercentInput.value = ''
     riskPercentInput.value = val
-    updateRestTable(tradeNumber)
+    if (tradesTableBodyElement.children.length > tradeNumber) {
+      updateRestTable(tradeNumber)
+    }
   }
 
   function rateOfReturnPercentInputChangeHandler(inputId = 'rateOfReturnPercent-1', inputValue) {
@@ -76,7 +75,9 @@ window.onload = () => {
     const val = rateOfReturnPercentInput.value
     rateOfReturnPercentInput.value = ''
     rateOfReturnPercentInput.value = val
-    updateRestTable(tradeNumber)
+    if (tradesTableBodyElement.children.length > tradeNumber) {
+      updateRestTable(tradeNumber)
+    }
   }
 
   function addListenersToInputAndItsButtons(inputElement, listenerFunction) {
@@ -89,17 +90,23 @@ window.onload = () => {
     )
   }
 
+  function setMaxLoss() {
+    maxLossElement.textContent = maxLoss.toFixed(2);
+    maxLossElement2.textContent = maxLoss.toFixed(2);
+  }
+
   function prepareTableRow(tradeNumber = 1) {
     const prevTradeRow = tradesTableBodyElement.children[tradeNumber - 2];
     const isLossInPrevTrade = prevTradeRow && prevTradeRow.className.indexOf('trade-row-loss') > -1;
     if (isLossInPrevTrade) {
       const prevTradeAmount = parseFloat(prevTradeRow.children[1].textContent)
-      losses.push(prevTradeAmount)
-      const totalLoss = losses.reduce((acc, loss) => acc + loss, 0)
+      if (!lossesMap[tradeNumber]) {
+        lossesMap[tradeNumber] = prevTradeAmount;
+      }
+      const totalLoss = Object.values(lossesMap).reduce((acc, loss) => acc + loss, 0)
       if (totalLoss > maxLoss) {
         maxLoss = totalLoss;
-        maxLossElement.textContent = maxLoss.toFixed(2);
-        maxLossElement2.textContent = maxLoss.toFixed(2);
+        setMaxLoss()
       }
     }
     const prevSuggestionTradeAmountIfLoss = prevTradeRow && parseFloat(prevTradeRow.children[8].textContent);
@@ -115,13 +122,7 @@ window.onload = () => {
     const tradeAmount = currentBalance * riskPercent / 100;
     let rateOfReturnPercent = rateOfReturnPercents[tradeNumber - 1];
     if (!rateOfReturnPercent) {
-      if (isLossInPrevTrade) {
-        const prevBalanceAfterProfit = parseFloat(prevTradeRow.querySelector('.balance-after-profit').textContent);
-        const lossToRecover = prevBalanceAfterProfit - currentBalance;
-        rateOfReturnPercent = (lossToRecover * 100 / tradeAmount).toFixed(2);
-      } else {
-        rateOfReturnPercent = rateOfReturnPercents[tradeNumber - 2] || 80;
-      }
+      rateOfReturnPercent = rateOfReturnPercents[tradeNumber - 2] || 80;
     }
     rateOfReturnPercents[tradeNumber - 1] = rateOfReturnPercent
     const profitAmount = (tradeAmount * rateOfReturnPercent / 100) || 0
@@ -188,7 +189,6 @@ window.onload = () => {
     try {
       const tableRow = prepareTableRow(tradeNumber);
       tradesTableBodyElement.append(tableRow);
-      totalTrades++;
       return true;
     } catch (error) {
       console.log(`error`, error)
@@ -225,6 +225,9 @@ window.onload = () => {
     localStorage.removeItem('tradesResults')
     localStorage.removeItem('riskPercents')
     localStorage.removeItem('rateOfReturnPercents')
+    tradesTableBodyElement.children.length = 0;
+    maxLoss = 0;
+    setMaxLoss()
     initTable()
   }
 
@@ -234,6 +237,7 @@ window.onload = () => {
     localStorage.setItem('rateOfReturnPercents', JSON.stringify(rateOfReturnPercents))
   }
 
+  setMaxLoss();
   initTable()
 
   initialAmountInput.addEventListener('keyup', onInputUpdate)
@@ -251,7 +255,9 @@ window.onload = () => {
     }
     const tableRow = prepareTableRow(tradeNumber);
     tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow);
-    updateRestTable(tradeNumber);
+    if (tradesTableBodyElement.children.length > tradeNumber) {
+      updateRestTable(tradeNumber)
+    }
   }
 
   const saveHistoryButton = document.getElementById('saveHistoryButton')
