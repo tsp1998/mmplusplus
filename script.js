@@ -4,19 +4,63 @@ window.onload = () => {
     loss: 'loss'
   }
   let maxLoss = 0;
-  const lossesMap = {};
+  let lossesMap = {};
   const initialAmountInput = document.querySelector('#initialAmount');
   const tradesTableBodyElement = document.querySelector('#trades-table-body');
   const maxLossElement = document.getElementById('maxLoss');
   const maxLossElement2 = document.getElementById('maxLoss2');
   let tradesResults = [];
   let riskPercents = [2];
-  rateOfReturnPercents = [80];
+  let rateOfReturnPercents = [80];
+  let sessions = []
+  let currentSession = localStorage.getItem('currentSession') || ''
+  const sessionDropdown = document.getElementById('session-dropdown');
+  const addSessionButton = document.getElementById('addSessionButton')
+  addSessionButton.addEventListener('click', addSession)
+
+  function addSession() {
+    const sessionNameInput = document.getElementById('sessionName')
+    if (!sessionNameInput.value) {
+      return
+    }
+    if (sessions.indexOf(sessionNameInput.value) > -1) {
+      return;
+    }
+    const optionElement = document.createElement('option')
+    optionElement.value = optionElement.textContent = sessionNameInput.value
+    sessionDropdown.appendChild(optionElement)
+    sessions.push(sessionNameInput.value)
+    localStorage.setItem('sessions', JSON.stringify(sessions))
+  }
+
+  function handleSessionChange (event) {
+    currentSession = event.target.value
+    initialAmountInput.value = 10000;
+    tradesResults = [];
+    riskPercents = [2];
+    rateOfReturnPercents = [80];
+    initTable()
+  }
+
+  sessionDropdown.addEventListener('change', handleSessionChange)
+
+  if (sessions = localStorage.getItem('sessions')) {
+    sessions = JSON.parse(sessions);
+    if (sessions.length) {
+      sessions.forEach(session => {
+        const optionElement = document.createElement('option')
+        optionElement.value = optionElement.textContent = session
+        sessionDropdown.appendChild(optionElement)
+      })
+    }
+  } else {
+    sessions = []
+  }
 
   function getCurrentBalance(tradeNumber) {
     return tradeNumber === 1 ?
       parseFloat(initialAmountInput.value) :
-      parseFloat(tradesTableBodyElement.children[tradeNumber - 2].children[4].textContent)
+      parseFloat(tradesTableBodyElement.children[tradeNumber - 2].children[4].querySelector('.value').textContent)
   }
 
   function updateRestTable(tradeNumber = 1) {
@@ -49,32 +93,46 @@ window.onload = () => {
   }
 
   function riskPercentInputChangeHandler(inputId = 'riskPercent-1', inputValue) {
-    const riskPercent = parseFloat(inputValue) || 0;
+    let riskPercent = parseFloat(inputValue) || 0;
+    if (riskPercent < 0) {
+      riskPercent = 0;
+      inputValue = 0
+    }
     const tradeNumber = parseInt(inputId.split('-')[1]);
+    const currentTableRow = tradesTableBodyElement.children[tradeNumber - 1];
+    if (riskPercent === riskPercents[tradeNumber - 1]) {
+      return;
+    }
     riskPercents[tradeNumber - 1] = riskPercent;
-    const tableRow = prepareTableRow(tradeNumber);
-    tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow)
-    const riskPercentInput = tableRow.querySelector('.risk-percent-input')
+    const newTableRow = prepareTableRow(tradeNumber);
+    currentTableRow.replaceWith(newTableRow)
+    const riskPercentInput = newTableRow.querySelector('.risk-percent-input')
     riskPercentInput.focus();
-    const val = riskPercentInput.value
     riskPercentInput.value = ''
-    riskPercentInput.value = val
+    riskPercentInput.value = inputValue
     if (tradesTableBodyElement.children.length > tradeNumber) {
       updateRestTable(tradeNumber)
     }
   }
 
   function rateOfReturnPercentInputChangeHandler(inputId = 'rateOfReturnPercent-1', inputValue) {
-    const rateOfReturnPercent = parseFloat(inputValue) || 0;
+    let rateOfReturnPercent = parseFloat(inputValue) || 0;
+    if (rateOfReturnPercent < 0) {
+      rateOfReturnPercent = 0;
+      inputValue = 0;
+    }
     const tradeNumber = parseInt(inputId.split('-')[1]);
+    const currentTableRow = tradesTableBodyElement.children[tradeNumber - 1];
+    if (rateOfReturnPercent === rateOfReturnPercents[tradeNumber - 1]) {
+      return;
+    }
     rateOfReturnPercents[tradeNumber - 1] = rateOfReturnPercent;
-    const tableRow = prepareTableRow(tradeNumber);
-    tradesTableBodyElement.children[tradeNumber - 1].replaceWith(tableRow)
-    const rateOfReturnPercentInput = tableRow.querySelector('.risk-percent-input')
+    const newTableRow = prepareTableRow(tradeNumber);
+    currentTableRow.replaceWith(newTableRow)
+    const rateOfReturnPercentInput = newTableRow.querySelector('.rate-of-return-percent-input')
     rateOfReturnPercentInput.focus();
-    const val = rateOfReturnPercentInput.value
     rateOfReturnPercentInput.value = ''
-    rateOfReturnPercentInput.value = val
+    rateOfReturnPercentInput.value = inputValue
     if (tradesTableBodyElement.children.length > tradeNumber) {
       updateRestTable(tradeNumber)
     }
@@ -99,7 +157,7 @@ window.onload = () => {
     const prevTradeRow = tradesTableBodyElement.children[tradeNumber - 2];
     const isLossInPrevTrade = prevTradeRow && prevTradeRow.className.indexOf('trade-row-loss') > -1;
     if (isLossInPrevTrade) {
-      const prevTradeAmount = parseFloat(prevTradeRow.children[1].textContent)
+      const prevTradeAmount = parseFloat(prevTradeRow.children[1].querySelector('.value').textContent)
       if (!lossesMap[tradeNumber]) {
         lossesMap[tradeNumber] = prevTradeAmount;
       }
@@ -108,8 +166,10 @@ window.onload = () => {
         maxLoss = totalLoss;
         setMaxLoss()
       }
+    } else {
+      lossesMap = {}
     }
-    const prevSuggestionTradeAmountIfLoss = prevTradeRow && parseFloat(prevTradeRow.children[8].textContent);
+    const prevSuggestionTradeAmountIfLoss = prevTradeRow && parseFloat(prevTradeRow.children[7].querySelector('.value').textContent);
     const tableRow = document.createElement('tr');
     tableRow.classList.add('trade-row');
     let currentBalance = getCurrentBalance(tradeNumber);
@@ -139,37 +199,70 @@ window.onload = () => {
       }
     }
     tableRow.innerHTML = `
-      <td>${tradeNumber}</td>
-      <td>${tradeAmount.toFixed(2)}</td>
-      <td>${profitAmount.toFixed(2)}(<span class="balance-after-profit">${balanceAfterProfit.toFixed(2)}</span>)</td>
-      <td>${tradeAmount.toFixed(2)}(<span class="balance-after-loss">${balanceAfterLoss.toFixed(2)}</span>)</td>
-      <td>${tradesResults[tradeNumber - 1] ? newBalance.toFixed(2) : '-'}</td>
       <td>
+        <span class="mobile-text">(No.)</span>
+        <span class="value">${tradeNumber}</span>
+      </td>
+      <td>
+        <span class="mobile-text">(Trade)</span>
+        <span class="value">${tradeAmount.toFixed(2)}</span>
+      </td>
+      <td>
+        <span class="mobile-text">(Profit)</span>
+        <span class="value">${profitAmount.toFixed(2)}</span>
+        (<span class="balance-after-profit">${balanceAfterProfit.toFixed(2)}</span>)
+      </td>
+      <td>
+        <span class="mobile-text">(Loss)</span>
+        <span class="value">${tradeAmount.toFixed(2)}</span>
+        (<span class="balance-after-loss">${balanceAfterLoss.toFixed(2)}</span>)
+      </td>
+      <td>
+        <span class="mobile-text">(Balance)</span>
+        <span class="value">
+          ${tradesResults[tradeNumber - 1] ? newBalance.toFixed(2) : '-'} 
+        </span>
+      </td>
+      <td>
+        <span class="mobile-text">(Risk)</span>
         <div class="form-group">
           <div class="form-control">
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-1"><<<</button>
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.1"><<</button>
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.01"><</button>
-            <input type="number" id="riskPercent-${tradeNumber}" class="risk-percent-input" value="${riskPercent}" />
-            <button class="increment increment-decrement-button-${tradeNumber}" value="0.01">></button>
-            <button class="increment increment-decrement-button-${tradeNumber}" value="0.1">>></button>
-            <button class="increment increment-decrement-button-${tradeNumber}" value="1">>>></button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-10">10</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-1">1</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.1">.1</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.01">.01</button>
+            <input type="text" id="riskPercent-${tradeNumber}" class="risk-percent-input" value="${riskPercent}" />
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.01">.01</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.1">.1</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="1">1</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="10">10</button>
           </div>
         </div>
       </td>
-      <td><button class='profit-button' id="profit-${tradeNumber}">Profit</button></td>
-      <td><button class='loss-button' id="loss-${tradeNumber}">Loss</button></td>
-      <td>${suggestionTradeAmountIfLoss ? `${suggestionTradeAmountIfLoss}` : '-'}</td>
+      <td>
+        <span class="mobile-text">(Profit/Loss)</span>
+        <button class='profit-button' id="profit-${tradeNumber}">Profit</button>
+        <button class='loss-button' id="loss-${tradeNumber}">Loss</button>
+      </td>
+      <td>
+        <span class="mobile-text">(Suggestion)</span>
+        <span class="value">
+          ${suggestionTradeAmountIfLoss ? `${suggestionTradeAmountIfLoss}` : '-'}
+        </span>
+      </td>
       <td>
         <div class="form-group">
+          <span class="mobile-text">(Return)</span>
           <div class="form-control">
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-1"><<<</button>
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.1"><<</button>
-            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.01"><</button>
-            <input type="number" id="rateOfReturnPercent-${tradeNumber}" class="rate-of-return-percent-input" value="${rateOfReturnPercent}" />
-            <button class="increment increment-decrement-button-${tradeNumber}" value="0.01">></button>
-            <button class="increment increment-decrement-button-${tradeNumber}" value="0.1">>></button>
-            <button class="increment increment-decrement-button-${tradeNumber}" value="1">>>></button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-10">10</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-1">1</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.1">.1</button>
+            <button class="decrement increment-decrement-button-${tradeNumber}" value="-0.01">.01</button>
+            <input type="text" id="rateOfReturnPercent-${tradeNumber}" class="rate-of-return-percent-input" value="${rateOfReturnPercent}" />
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.01">.01</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="0.1">.1</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="1">1</button>
+            <button class="increment increment-decrement-button-${tradeNumber}" value="10">10</button>
           </div>
         </div>
       </td>
@@ -198,9 +291,10 @@ window.onload = () => {
 
   function initTable() {
     tradesTableBodyElement.innerHTML = ''
-    const tradesResultsJSON = localStorage.getItem('tradesResults')
-    const riskPercentsJSON = localStorage.getItem('riskPercents')
-    const rateOfReturnPercentsJSON = localStorage.getItem('rateOfReturnPercents')
+    initialAmountInput.value = localStorage.getItem(`${currentSession}_initialAmount`) || 10000
+    const tradesResultsJSON = localStorage.getItem(`${currentSession}_tradesResults`)
+    const riskPercentsJSON = localStorage.getItem(`${currentSession}_riskPercents`)
+    const rateOfReturnPercentsJSON = localStorage.getItem(`${currentSession}_rateOfReturnPercents`)
     if (riskPercentsJSON) {
       riskPercents = JSON.parse(riskPercentsJSON)
     }
@@ -222,9 +316,10 @@ window.onload = () => {
   function reset() {
     tradesResults = [];
     riskPercents = [2];
-    localStorage.removeItem('tradesResults')
-    localStorage.removeItem('riskPercents')
-    localStorage.removeItem('rateOfReturnPercents')
+    localStorage.removeItem(`${currentSession}_initialAmount`)
+    localStorage.removeItem(`${currentSession}_tradesResults`)
+    localStorage.removeItem(`${currentSession}_riskPercents`)
+    localStorage.removeItem(`${currentSession}_rateOfReturnPercents`)
     tradesTableBodyElement.children.length = 0;
     maxLoss = 0;
     setMaxLoss()
@@ -232,9 +327,12 @@ window.onload = () => {
   }
 
   function saveHistory(params) {
-    localStorage.setItem('tradesResults', JSON.stringify(tradesResults))
-    localStorage.setItem('riskPercents', JSON.stringify(riskPercents))
-    localStorage.setItem('rateOfReturnPercents', JSON.stringify(rateOfReturnPercents))
+    localStorage.setItem('sessions', JSON.stringify(sessions))
+    localStorage.setItem('currentSession', currentSession)
+    localStorage.setItem(`${currentSession}_initialAmount`, initialAmountInput.value)
+    localStorage.setItem(`${currentSession}_tradesResults`, JSON.stringify(tradesResults))
+    localStorage.setItem(`${currentSession}_riskPercents`, JSON.stringify(riskPercents))
+    localStorage.setItem(`${currentSession}_rateOfReturnPercents`, JSON.stringify(rateOfReturnPercents))
   }
 
   setMaxLoss();
@@ -244,7 +342,10 @@ window.onload = () => {
 
   function inputValueUpdateHandler(updateValueby = 0.01, buttonElement) {
     const inputElement = buttonElement.parentElement.querySelector('input');
-    const newValue = +(parseFloat(inputElement.value) + parseFloat(updateValueby)).toFixed(2);
+    let newValue = +(parseFloat(inputElement.value) + parseFloat(updateValueby)).toFixed(2);
+    if (newValue < 0) {
+      newValue = 0;
+    }
     inputElement.value = newValue;
     const classSplit = buttonElement.className.split('-')
     const tradeNumber = parseInt(classSplit[classSplit.length - 1])
@@ -264,10 +365,38 @@ window.onload = () => {
   const resetButton = document.getElementById('resetButton')
   resetButton.addEventListener('click', reset)
   saveHistoryButton.addEventListener('click', saveHistory)
+  
+  const importButton = document.getElementById('import')
+  const exportButton = document.getElementById('export')
+  const dataInput = document.getElementById('data')
 
+  importButton.addEventListener('click', handleImport)
+  exportButton.addEventListener('click', handleExport)
+
+  function handleImport() {
+    if (dataInput.value) {
+      try {
+        const data = JSON.parse(dataInput.value)
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, data[key])
+        })
+      } catch (error) {
+        console.log(`error`, error)
+      }
+    }
+  }
+  function handleExport() {
+    const localStorageJSON = JSON.stringify(localStorage)
+    console.log(localStorageJSON)
+    dataInput.value = localStorageJSON
+  }
 
   window.onbeforeunload = () => {
     initialAmountInput.removeEventListener('keyup', onInputUpdate)
+    addSessionButton.removeEventListener('click', addSession)
+    sessionDropdown.removeEventListener('change', handleSessionChange)
+    importButton.removeEventListener('click', handleExport)
+    exportButton.removeEventListener('click', handleImport)
     const riskPercentInputs = document.querySelectorAll('.risk-percent-input');
     const rateOfReturnPercentInputs = document.querySelectorAll('.rate-of-return-percent-input');
     const profitButtons = document.querySelectorAll('.profit-button');

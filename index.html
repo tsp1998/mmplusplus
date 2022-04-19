@@ -10,7 +10,21 @@
 </head>
 
 <body>
-  <h1>Money Management++</h1>
+  <h1 id="brand-name">Money Management++</h1>
+  <div class="sessions-container">
+    <div>
+      <input type="text" id="sessionName" placeholder="session-name">
+      <button id="addSessionButton">Add Session</button>
+    </div>
+    <select id="session-dropdown">
+      <option value="">Select Session</option>
+    </select>
+  </div>
+  <div class="import-export-container">
+    <button id="import">Import</button>
+    <button id="export">Export</button>
+    <textarea id="data" cols="30" rows="5"></textarea>
+  </div>
   <div class="inputs-container">
     <div class="form-group">
       <div class="form-control">
@@ -29,16 +43,15 @@
     <table class="trades-table" id="trades-table">
       <thead>
         <tr>
-          <td>Trade No.</td>
-          <td>Trade Amount</td>
-          <td>Profit Amount</td>
-          <td>Loss Amount</td>
-          <td>Current Balance</td>
-          <td>Trade Risk (%)</td>
+          <td>No.</td>
+          <td>Trade</td>
           <td>Profit</td>
           <td>Loss</td>
+          <td>Balance</td>
+          <td>Risk(%)</td>
+          <td>Profit/Loss</td>
           <td>Suggestion</td>
-          <td>Rate of Return</td>
+          <td>Return</td>
         </tr>
       </thead>
       <tbody id="trades-table-body">

@@ -1,8 +1,35 @@
 body {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 10rem;
+}
+
+.brand-name {
+  width: 10%;
+}
+
+.sessions-container {
+  margin: 0 20px;
+  width: 20%;
+  display: flex;
+  flex-direction: column;
+}
+
+#sessionName {
+  width: 100px;
+}
+
+#addSessionButton {
+  width: 100px;
+}
+
+.import-export-container {
+  width: 20%;
+}
+
+.inputs-container {
+  margin-left: 20px;
 }
 
 input {
@@ -10,11 +37,13 @@ input {
   width: 5rem;
   margin: .5rem 0;
 }
+
 input[type="number"] {
   -webkit-appearance: textfield;
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
   padding: 1.5rem .5rem;
@@ -42,7 +71,14 @@ td {
   border: 1px solid grey;
   text-align: center;
   width: 10rem;
-  padding: 5px;
+}
+
+tr td:nth-child(1) {
+  width: 10px;
+}
+
+tr td:nth-child(7) {
+  width: 80px;
 }
 
 td input {
@@ -57,11 +93,13 @@ button {
   cursor: pointer;
   color: white;
   background: #000;
+  margin: 2px 0;
 }
 
 .form-control button {
   width: 30px;
 }
+
 h1 button {
   width: 100px;
   background: blue;
@@ -79,6 +117,18 @@ button:active {
   background: rgb(252, 41, 41);
 }
 
+.decrement {
+  background: rgb(115, 3, 61);
+}
+
+.increment {
+  background: rgb(13, 1, 106);
+}
+
+.mobile-text {
+  display: none;
+}
+
 @media only screen and (max-width: 481px) {
   tr {
     display: flex;
@@ -87,6 +137,16 @@ button:active {
   }
 
   td {
-    width: 400px;
+    width: 400px !important;
+    padding: 5px 0;
+  }
+
+  .mobile-text {
+    display: inline;
+    margin-right: 5px;
+  }
+
+  .form-control input {
+    width: 50px;
   }
 }
